@@ -1,11 +1,60 @@
-# exam-transcriber
+# exam-transcriber — Handwritten Exam OCR to Markdown (OpenAI Vision CLI in Go)
 
-A CLI tool that transcribes handwritten student exam pages into Markdown using an OpenAI-compatible vision model (default: `gpt-4o`).
+![Go Version](https://img.shields.io/badge/Go-1.22+-blue)
+![OpenAI Compatible](https://img.shields.io/badge/OpenAI-Compatible-purple)
+![CLI Tool](https://img.shields.io/badge/type-CLI-orange)
+![Academic Use](https://img.shields.io/badge/use-academic%20workflows-green)
 
-## Prerequisites
+**exam-transcriber** is a Go-based CLI tool that converts handwritten exam scans into structured Markdown using OpenAI-compatible multimodal (vision) models such as `gpt-4o`.
+
+It is designed for academic digitization workflows, AI-assisted grading pipelines, and large-scale transcription of handwritten student submissions.
+
+---
+
+## ✨ Features
+
+- Handwritten exam transcription to Markdown
+- Vision-model powered OCR alternative
+- Multi-page processing in a single invocation
+- Model-agnostic (any OpenAI-compatible endpoint)
+- Prompt-driven behavior (course-specific customization)
+- Clean stdout output (pipe-friendly)
+- Token usage reporting to stderr
+- Batch processing support
+
+---
+
+## Why This Exists
+
+In the era of generative AI, computer-based programming exams have become increasingly difficult to administer in ways that ensure independent student work.
+
+Handwritten, paper-based assessments remain an effective way to evaluate reasoning and authorship. However, grading paper exams—especially those containing code, algorithms, and structured solutions—is operationally intensive.
+
+`exam-transcriber` addresses this gap by converting handwritten submissions into structured Markdown, enabling scalable and controlled AI-assisted evaluation workflows while preserving academic integrity.
+
+---
+
+## Comparison to Traditional OCR
+
+| Feature | Traditional OCR (e.g., Tesseract) | exam-transcriber |
+|----------|-----------------------------------|------------------|
+| Handwriting handling | Limited | Strong (LLM-based) |
+| Code block recovery | No | Yes |
+| Math formatting | Raw text | Structured Markdown |
+| Context awareness | No | Yes |
+| Prompt control | No | Yes |
+
+Unlike conventional OCR engines, exam-transcriber leverages multimodal LLMs to produce semantically structured output suitable for grading pipelines.
+
+---
+
+## Requirements
 
 - Go 1.22+
-- An OpenAI API key with access to your selected model (default: `gpt-4o`)
+- OpenAI-compatible API key
+- Access to a vision-capable model (default: `gpt-4o`)
+
+---
 
 ## Installation
 
@@ -13,117 +62,199 @@ A CLI tool that transcribes handwritten student exam pages into Markdown using a
 git clone <your-repo>
 cd exam-transcriber
 go build -o exam-transcriber ./cmd/exam-transcriber
-```
+````
+
+Optionally move the binary to your `$PATH`.
+
+---
 
 ## Configuration
 
-Set your OpenAI API key as an environment variable:
+Set your API key:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
 ```
 
+If using a compatible provider:
+
+```bash
+export OPENAI_BASE_URL="https://api.example.com/v1"
+```
+
+---
+
 ## Usage
 
+```bash
+exam-transcriber -prompt <prompt-file> [options] <image1> [image2 ... imageN]
 ```
-exam-transcriber -prompt <docs/prompts/prompt.txt> [options] <image1> [image2 ... imageN]
-```
 
-### Flags
+Images are processed in the order provided.
 
-| Flag           | Required | Description                                                      |
-|----------------|----------|------------------------------------------------------------------|
-| `-prompt`      | Yes      | Path to a text file containing the system prompt                 |
-| `-output`      | No       | Path to the output Markdown file (defaults to stdout)            |
-| `-model`       | No       | Model name to use (default: `gpt-4o`)                            |
-| `-base-url`    | No       | OpenAI-compatible API base URL                                   |
-| `-no-thinking` | No       | Disable Thinking Mode (for Kimi models)                          |
+---
 
-### Examples
+## Flags
 
-Transcribe a single page and print to stdout:
+| Flag           | Required | Description                                           |
+| -------------- | -------- | ----------------------------------------------------- |
+| `-prompt`      | Yes      | Path to the system prompt file                        |
+| `-output`      | No       | Output Markdown file (defaults to stdout)             |
+| `-model`       | No       | Model name (default: `gpt-4o`)                        |
+| `-base-url`    | No       | OpenAI-compatible API endpoint                        |
+| `-no-thinking` | No       | Disable reasoning mode (useful for certain providers) |
+
+---
+
+## Examples
+
+### Transcribe a Single Page
+
 ```bash
 ./exam-transcriber -prompt docs/prompts/prompt.txt exam_page1.png
 ```
 
-Transcribe a multi-page exam and save to a file:
+### Transcribe Multiple Pages
+
 ```bash
-./exam-transcriber -prompt docs/prompts/prompt.txt -output student_john.md \
-  page1.jpg page2.jpg page3.jpg page4.jpg
+./exam-transcriber \
+  -prompt docs/prompts/prompt.txt \
+  -output student_john.md \
+  page1.jpg page2.jpg page3.jpg
 ```
 
-Batch-transcribe multiple students using a shell loop:
+### Batch Process Multiple Students
+
 ```bash
 for student in exams/*/; do
   name=$(basename "$student")
-  ./exam-transcriber -prompt docs/prompts/prompt.txt \
+  ./exam-transcriber \
+    -prompt docs/prompts/prompt.txt \
     -output "output/${name}.md" \
     "$student"*.jpg
 done
 ```
 
-Use a custom model:
+### Use a Custom Model
+
 ```bash
-./exam-transcriber -prompt docs/prompts/prompt.txt -model kimi-k2 page1.png
+./exam-transcriber \
+  -prompt docs/prompts/prompt.txt \
+  -model kimi-k2 \
+  page1.png
 ```
 
-Use an OpenAI-compatible endpoint:
+### Use an OpenAI-Compatible Endpoint
+
 ```bash
-./exam-transcriber -prompt docs/prompts/prompt.txt -base-url https://api.example.com/v1 page1.png
+./exam-transcriber \
+  -prompt docs/prompts/prompt.txt \
+  -base-url https://api.example.com/v1 \
+  page1.png
 ```
 
-Using curated prompt variants:
-```bash
-./exam-transcriber -prompt docs/prompts/TranscribePrompt.v2.compact.txt page1.png
-./exam-transcriber -prompt docs/prompts/TranscribePrompt.v2.code-heavy.txt page1.png
-```
+---
 
 ## Supported Image Formats
 
-`jpg`, `jpeg`, `png`, `gif`, `webp`
+* `jpg`
+* `jpeg`
+* `png`
+* `gif`
+* `webp`
 
-> **Tip:** Scan exams at 300 DPI or higher for best transcription accuracy.
+**Recommended:** Scan at 300 DPI or higher with minimal skew for best results.
+
+---
 
 ## Prompt Customization
 
-The `-prompt` file is the system prompt sent to the selected model before the images.
-A ready-to-use example is provided in `docs/prompts/prompt.txt`. You can create different
-prompt files for different courses or exam formats without touching the code.
+The `-prompt` file is sent as the system instruction before images are processed.
 
-Available prompt variants are under `docs/prompts/`.
+This enables:
 
-## Project Layout
+* Course-specific formatting rules
+* Rubric-aware transcription
+* Code block enforcement
+* Markdown normalization
+* Strict output constraints
 
-```text
-cmd/exam-transcriber/main.go   # CLI entrypoint
-internal/app/                  # flag parsing + orchestration
-internal/transcriber/          # prompt/image loading + OpenAI request
-internal/ui/                   # terminal spinner
-scripts/build_release.sh       # release build script
-docs/prompts/                  # system prompt variants
+Prompt variants are located in:
+
+```
+docs/prompts/
 ```
 
-## Output
+This design keeps evaluation policy separate from application logic.
 
-The tool writes the raw Markdown response from the selected model to the specified output
-file (or stdout). Progress and token usage are printed to stderr so they don't
-interfere with piped output.
+---
+
+## Output Behavior
+
+* Markdown output → stdout (default) or `-output` file
+* Logs and token usage → stderr
+
+This ensures clean piping:
+
+```bash
+./exam-transcriber ... > submission.md
+```
 
 Example stderr output:
+
 ```
 Loading 4 image(s)...
-  Loaded: page1.jpg (image/jpeg, 412 KB)
-  Loaded: page2.jpg (image/jpeg, 389 KB)
-  Loaded: page3.jpg (image/jpeg, 401 KB)
-  Loaded: page4.jpg (image/jpeg, 375 KB)
 Sending request to OpenAI...
 Transcription saved to: student_john.md
 Done. Tokens used — prompt: 8432, completion: 1205, total: 9637
 ```
 
+---
+
 ## Cost Estimate
 
-Using `gpt-4o` with `detail: high` per image, a typical 4–6 page exam costs
-roughly **$0.05–$0.15** depending on image resolution and answer length.
+Using `gpt-4o` with high-detail image processing:
 
-Costs vary by model and provider if you set `-model` or `-base-url`.
+Typical 4–6 page handwritten exam:
+**~$0.05 – $0.15 USD**
+
+Actual cost depends on:
+
+* Image resolution
+* Answer length
+* Selected model
+* Provider pricing
+
+---
+
+## Architecture Overview
+
+The project follows a clean layered structure:
+
+```
+cmd/exam-transcriber/main.go   # CLI entrypoint
+internal/app/                  # flag parsing and orchestration
+internal/transcriber/          # prompt + image loading + API request
+internal/ui/                   # terminal spinner
+scripts/build_release.sh       # release build script
+docs/prompts/                  # system prompt variants
+```
+
+The architecture allows easy model swapping and prompt experimentation.
+
+---
+
+## Use Cases
+
+* University exam digitization
+* AI-assisted grading workflows
+* TA evaluation automation
+* Converting scanned homework to Markdown
+* Code-heavy exam transcription
+* Multimodal OCR alternative for academic use
+
+---
+
+## License
+
+MIT
